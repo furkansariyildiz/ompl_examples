@@ -4,6 +4,7 @@
 #include <ompl/base/State.h>
 #include <ompl/geometric/PathGeometric.h>
 
+#include <string>
 #include <vector>
 
 namespace ompl_examples
@@ -21,6 +22,8 @@ struct CircleObstacle
 bool isStateValid(const ompl::base::State *state, const std::vector<CircleObstacle> &obstacles);
 
 void printPath(const ompl::geometric::PathGeometric &path);
+
+bool writePathCsv(const ompl::geometric::PathGeometric &path, const std::string &file_path);
 
 }  // namespace ompl_examples
 

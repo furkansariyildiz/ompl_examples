@@ -2,6 +2,7 @@
 
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 
@@ -40,6 +41,26 @@ void printPath(const ompl::geometric::PathGeometric &path)
   std::cout << "Solved path with " << path.getStateCount() << " states:\n";
   std::cout << std::fixed << std::setprecision(3);
   path.printAsMatrix(std::cout);
+}
+
+bool writePathCsv(const ompl::geometric::PathGeometric &path, const std::string &file_path)
+{
+  std::ofstream output(file_path);
+  if (!output)
+  {
+    return false;
+  }
+
+  output << "x,y\n";
+  output << std::fixed << std::setprecision(6);
+
+  for (std::size_t i = 0; i < path.getStateCount(); ++i)
+  {
+    const auto *state = path.getState(i)->as<ompl::base::RealVectorStateSpace::StateType>();
+    output << state->values[0] << "," << state->values[1] << "\n";
+  }
+
+  return true;
 }
 
 }  // namespace ompl_examples

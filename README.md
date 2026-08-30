@@ -39,3 +39,23 @@ After sourcing the workspace:
 source devel/setup.bash
 rosrun ompl_examples plan_2d
 ```
+
+## Plot
+
+Generate a path CSV and save a plot image:
+
+```bash
+rosrun ompl_examples plan_2d /tmp/plan_2d_path.csv
+rosrun ompl_examples plot_2d_path.py /tmp/plan_2d_path.csv --output /tmp/plan_2d_path.png
+```
+
+Omit `--output` to open an interactive matplotlib window instead.
+
+## Example Result
+
+The repository includes a sample output generated from the 2D planning example:
+
+- Path CSV: [results/plan_2d/plan_2d_path.csv](results/plan_2d/plan_2d_path.csv)
+- Plot image: [results/plan_2d/plan_2d_path.png](results/plan_2d/plan_2d_path.png)
+
+![2D OMPL path result](results/plan_2d/plan_2d_path.png)

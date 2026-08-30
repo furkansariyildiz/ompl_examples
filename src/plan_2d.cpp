@@ -9,13 +9,16 @@
 
 #include <iostream>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace ob = ompl::base;
 namespace og = ompl::geometric;
 
-int main()
+int main(int argc, char **argv)
 {
+  const std::string output_csv_path = argc > 1 ? argv[1] : "";
+
   auto space = std::make_shared<ob::RealVectorStateSpace>(2);
 
   // Set the bounds of the space to be in [0, 10] in both dimensions
@@ -76,6 +79,17 @@ int main()
   og::PathGeometric path = simple_setup.getSolutionPath();
   path.interpolate(40);
   ompl_examples::printPath(path);
+
+  if (!output_csv_path.empty())
+  {
+    if (!ompl_examples::writePathCsv(path, output_csv_path))
+    {
+      std::cout << "Failed to write path CSV: " << output_csv_path << "\n";
+      return 1;
+    }
+
+    std::cout << "Wrote path CSV: " << output_csv_path << "\n";
+  }
 
   return 0;
 }
