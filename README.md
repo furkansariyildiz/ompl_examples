@@ -16,11 +16,11 @@ Reusable obstacle and path-printing helpers live in `include/ompl_examples/plann
 
 ## Dependencies
 
-Install OMPL for ROS Noetic before building:
+Install OMPL, YAML parsing, and plotting dependencies before building:
 
 ```bash
 sudo apt-get update
-sudo apt-get install ros-noetic-ompl
+sudo apt-get install ros-noetic-ompl libyaml-cpp-dev python3-yaml python3-matplotlib
 ```
 
 ## Build
@@ -40,14 +40,28 @@ source devel/setup.bash
 rosrun ompl_examples plan_2d
 ```
 
+Run with the default YAML world config:
+
+```bash
+rosrun ompl_examples plan_2d $(rospack find ompl_examples)/config/plan_2d_world.yaml /tmp/plan_2d_path.csv
+```
+
+Or run the same configured example through launch:
+
+```bash
+roslaunch ompl_examples plan_2d.launch
+```
+
 ## Plot
 
 Generate a path CSV and save a plot image:
 
 ```bash
-rosrun ompl_examples plan_2d /tmp/plan_2d_path.csv
-rosrun ompl_examples plot_2d_path.py /tmp/plan_2d_path.csv --output /tmp/plan_2d_path.png
+rosrun ompl_examples plan_2d $(rospack find ompl_examples)/config/plan_2d_world.yaml /tmp/plan_2d_path.csv
+rosrun ompl_examples plot_2d_path.py /tmp/plan_2d_path.csv --config $(rospack find ompl_examples)/config/plan_2d_world.yaml --output /tmp/plan_2d_path.png
 ```
+
+If you edit the YAML world config, regenerate the CSV before plotting. The plotter validates the CSV path against the configured obstacles and reports an error if they do not match.
 
 Omit `--output` to open an interactive matplotlib window instead.
 

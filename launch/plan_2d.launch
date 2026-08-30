@@ -1,0 +1,12 @@
+<launch>
+  <arg name="world_config" default="$(find ompl_examples)/config/plan_2d_world.yaml" />
+  <arg name="output_csv" default="/tmp/plan_2d_path.csv" />
+
+  <node
+    pkg="ompl_examples"
+    type="plan_2d"
+    name="plan_2d"
+    output="screen"
+    required="true"
+    args="$(arg world_config) $(arg output_csv)" />
+</launch>
