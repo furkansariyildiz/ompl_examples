@@ -62,6 +62,40 @@ robot:
 
 The planner checks obstacles with an effective collision radius of `obstacle.radius + robot.radius + robot.safety_margin`. The plot shows the physical obstacle and the inflated collision boundary.
 
+## ROS Path Topic
+
+Run the ROS planner publisher:
+
+```bash
+roslaunch ompl_examples plan_2d_ros.launch
+```
+
+The node publishes the solved path as `nav_msgs/Path` on `/ompl_examples/path` using the `map` frame by default. The publisher is latched, so subscribers that start later still receive the latest planned path.
+
+Inspect the published path:
+
+```bash
+rostopic echo /ompl_examples/path
+```
+
+Run the same workflow with the live matplotlib plotter:
+
+```bash
+roslaunch ompl_examples plan_2d_ros.launch show_plotter:=true
+```
+
+Save one live plot image from the topic without opening an interactive window:
+
+```bash
+roslaunch ompl_examples plan_2d_ros.launch show_plotter:=true plot_output:=/tmp/live_plan_2d_path.png plot_once:=true
+```
+
+The ROS node can still write a CSV if `output_csv` is set:
+
+```bash
+roslaunch ompl_examples plan_2d_ros.launch output_csv:=/tmp/plan_2d_path.csv
+```
+
 ## Plot
 
 Generate a path CSV and save a plot image:

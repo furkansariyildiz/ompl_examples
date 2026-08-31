@@ -8,6 +8,8 @@ add_compile_options(-std=c++11)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  geometry_msgs
+  nav_msgs
   roscpp
   rospy
 )
@@ -106,7 +108,7 @@ find_package(yaml-cpp REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES ompl_examples
-#  CATKIN_DEPENDS roscpp rospy
+  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy
 #  DEPENDS system_lib
 )
 
@@ -157,7 +159,18 @@ add_executable(plan_2d
   src/planning_2d.cpp
 )
 
+add_executable(plan_2d_node
+  src/plan_2d_node.cpp
+  src/planning_2d.cpp
+)
+
 target_link_libraries(plan_2d
+  ${catkin_LIBRARIES}
+  ${OMPL_LIBRARIES}
+  yaml-cpp
+)
+
+target_link_libraries(plan_2d_node
   ${catkin_LIBRARIES}
   ${OMPL_LIBRARIES}
   yaml-cpp
@@ -173,6 +186,7 @@ target_link_libraries(plan_2d
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
+  scripts/live_plot_2d_path.py
   scripts/plot_2d_path.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
@@ -183,7 +197,7 @@ catkin_install_python(PROGRAMS
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 
-install(TARGETS plan_2d
+install(TARGETS plan_2d plan_2d_node
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

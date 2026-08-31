@@ -1,0 +1,32 @@
+<launch>
+  <arg name="world_config" default="$(find ompl_examples)/config/plan_2d_world.yaml" />
+  <arg name="path_topic" default="/ompl_examples/path" />
+  <arg name="frame_id" default="map" />
+  <arg name="output_csv" default="" />
+  <arg name="solve_timeout" default="1.0" />
+  <arg name="interpolate_count" default="1000" />
+  <arg name="show_plotter" default="false" />
+  <arg name="plot_output" default="" />
+  <arg name="plot_once" default="false" />
+
+  <node pkg="ompl_examples" type="plan_2d_node" name="plan_2d_node" output="screen">
+    <param name="world_config" value="$(arg world_config)" />
+    <param name="path_topic" value="$(arg path_topic)" />
+    <param name="frame_id" value="$(arg frame_id)" />
+    <param name="output_csv" value="$(arg output_csv)" />
+    <param name="solve_timeout" value="$(arg solve_timeout)" />
+    <param name="interpolate_count" value="$(arg interpolate_count)" />
+  </node>
+
+  <node
+    if="$(arg show_plotter)"
+    pkg="ompl_examples"
+    type="live_plot_2d_path.py"
+    name="live_plot_2d_path"
+    output="screen">
+    <param name="world_config" value="$(arg world_config)" />
+    <param name="path_topic" value="$(arg path_topic)" />
+    <param name="output" value="$(arg plot_output)" />
+    <param name="once" value="$(arg plot_once)" />
+  </node>
+</launch>
