@@ -71,12 +71,14 @@ int main(int argc, char **argv)
   // Define the obstacles
   // X, Y, Radius
   const std::vector<ompl_examples::CircleObstacle> obstacles = world.obstacles;
+  const ompl_examples::RobotModel robot = world.robot;
+  const double collision_padding = ompl_examples::getCollisionPadding(robot);
 
   // Set the state validity checker
   // The lambda function captures the obstacles vector and checks if a state is valid
-  // A state is valid if it is not inside any of the defined obstacles 
+  // A state is valid if it is not inside any inflated obstacle collision radius
   simple_setup.setStateValidityChecker(
-      [&obstacles](const ob::State *state) { return ompl_examples::isStateValid(state, obstacles); });
+      [&obstacles, &robot](const ob::State *state) { return ompl_examples::isStateValid(state, obstacles, robot); });
   simple_setup.getSpaceInformation()->setStateValidityCheckingResolution(0.01);
 
   // Define the start state
@@ -96,6 +98,8 @@ int main(int argc, char **argv)
 
   std::cout << "Planning from (" << start[0] << ", " << start[1] << ") to (" << goal[0] << ", "
             << goal[1] << ")...\n";
+  std::cout << "Robot radius: " << robot.radius << ", safety margin: " << robot.safety_margin
+            << ", obstacle padding: " << collision_padding << "\n";
 
   // Attempt to solve the planning problem within a time limit of 1 second
   const ob::PlannerStatus solved = simple_setup.solve(1.0);
@@ -107,7 +111,7 @@ int main(int argc, char **argv)
   }
 
   og::PathGeometric path = simple_setup.getSolutionPath();
-  if (!ompl_examples::isPathValid(path, obstacles))
+  if (!ompl_examples::isPathValid(path, obstacles, robot))
   {
     std::cout << "The planner returned a path that intersects an obstacle.\n";
     return 1;
@@ -116,7 +120,7 @@ int main(int argc, char **argv)
   // Simplify the solution path to make it more efficient and easier to follow
   simple_setup.simplifySolution();
   const og::PathGeometric simplified_path = simple_setup.getSolutionPath();
-  if (ompl_examples::isPathValid(simplified_path, obstacles))
+  if (ompl_examples::isPathValid(simplified_path, obstacles, robot))
   {
     path = simplified_path;
   }
@@ -127,7 +131,7 @@ int main(int argc, char **argv)
 
   // Retrieve the solution path and interpolate it to have 1000 states for smoother visualization
   path.interpolate(1000);
-  if (!ompl_examples::isPathValid(path, obstacles))
+  if (!ompl_examples::isPathValid(path, obstacles, robot))
   {
     std::cout << "The interpolated path intersects an obstacle.\n";
     return 1;

@@ -48,12 +48,13 @@ double squaredDistanceToSegment(const Point2D &point, const Point2D &segment_sta
 
 }  // namespace
 
-bool CircleObstacle::contains(double x, double y) const
+bool CircleObstacle::contains(double x, double y, double padding) const
 {
   // Check if the point (x, y) is inside the circle defined by center (center_x, center_y) and radius
   const double dx = x - center_x;
   const double dy = y - center_y;
-  return (dx * dx + dy * dy) <= (radius * radius);
+  const double collision_radius = radius + padding;
+  return (dx * dx + dy * dy) <= (collision_radius * collision_radius);
 }
 
 PlanningWorld makeDefaultWorld()
@@ -63,12 +64,23 @@ PlanningWorld makeDefaultWorld()
   world.bound_high = 10.0;
   world.start = {1.0, 1.0};
   world.goal = {9.0, 9.0};
+  world.robot = {0.0, 0.0};
   world.obstacles = {
       {5.0, 5.0, 1.25},
       {3.0, 6.5, 1.0},
       {7.0, 3.0, 1.0},
   };
   return world;
+}
+
+double getCollisionPadding(const RobotModel &robot)
+{
+  return robot.radius + robot.safety_margin;
+}
+
+double getCollisionRadius(const CircleObstacle &obstacle, const RobotModel &robot)
+{
+  return obstacle.radius + getCollisionPadding(robot);
 }
 
 bool loadWorldConfig(const std::string &file_path, PlanningWorld &world, std::string &error_message)
@@ -82,6 +94,30 @@ bool loadWorldConfig(const std::string &file_path, PlanningWorld &world, std::st
     world.start = {root["start"]["x"].as<double>(), root["start"]["y"].as<double>()};
     world.goal = {root["goal"]["x"].as<double>(), root["goal"]["y"].as<double>()};
 
+    const YAML::Node robot = root["robot"];
+    if (robot)
+    {
+      if (robot["radius"])
+      {
+        world.robot.radius = robot["radius"].as<double>();
+      }
+      if (robot["safety_margin"])
+      {
+        world.robot.safety_margin = robot["safety_margin"].as<double>();
+      }
+    }
+
+    if (world.robot.radius < 0.0)
+    {
+      error_message = "The robot radius must be non-negative.";
+      return false;
+    }
+    if (world.robot.safety_margin < 0.0)
+    {
+      error_message = "The robot safety margin must be non-negative.";
+      return false;
+    }
+
     world.obstacles.clear();
     const YAML::Node obstacles = root["obstacles"];
     if (!obstacles || !obstacles.IsSequence())
@@ -92,10 +128,17 @@ bool loadWorldConfig(const std::string &file_path, PlanningWorld &world, std::st
 
     for (const auto &obstacle : obstacles)
     {
+      const double radius = obstacle["radius"].as<double>();
+      if (radius < 0.0)
+      {
+        error_message = "Obstacle radii must be non-negative.";
+        return false;
+      }
+
       world.obstacles.push_back({
           obstacle["center"]["x"].as<double>(),
           obstacle["center"]["y"].as<double>(),
-          obstacle["radius"].as<double>(),
+          radius,
       });
     }
   }
@@ -108,15 +151,17 @@ bool loadWorldConfig(const std::string &file_path, PlanningWorld &world, std::st
   return true;
 }
 
-bool isStateValid(const ompl::base::State *state, const std::vector<CircleObstacle> &obstacles)
+bool isStateValid(const ompl::base::State *state, const std::vector<CircleObstacle> &obstacles,
+                  const RobotModel &robot)
 {
   // Cast the state to a RealVectorStateSpace::StateType to access its coordinates
   const Point2D point = getPointFromState(state);
+  const double collision_padding = getCollisionPadding(robot);
 
   // Check if the point (x, y) is inside any of the defined obstacles
   for (const auto &obstacle : obstacles)
   {
-    if (obstacle.contains(point.x, point.y))
+    if (obstacle.contains(point.x, point.y, collision_padding))
     {
       return false;
     }
@@ -125,7 +170,8 @@ bool isStateValid(const ompl::base::State *state, const std::vector<CircleObstac
   return true;
 }
 
-bool isPathValid(const ompl::geometric::PathGeometric &path, const std::vector<CircleObstacle> &obstacles)
+bool isPathValid(const ompl::geometric::PathGeometric &path, const std::vector<CircleObstacle> &obstacles,
+                 const RobotModel &robot)
 {
   if (path.getStateCount() == 0)
   {
@@ -134,7 +180,7 @@ bool isPathValid(const ompl::geometric::PathGeometric &path, const std::vector<C
 
   for (std::size_t i = 0; i < path.getStateCount(); ++i)
   {
-    if (!isStateValid(path.getState(i), obstacles))
+    if (!isStateValid(path.getState(i), obstacles, robot))
     {
       return false;
     }
@@ -148,7 +194,8 @@ bool isPathValid(const ompl::geometric::PathGeometric &path, const std::vector<C
     for (const auto &obstacle : obstacles)
     {
       const Point2D obstacle_center = {obstacle.center_x, obstacle.center_y};
-      const double radius_squared = obstacle.radius * obstacle.radius;
+      const double collision_radius = getCollisionRadius(obstacle, robot);
+      const double radius_squared = collision_radius * collision_radius;
 
       if (squaredDistanceToSegment(obstacle_center, segment_start, segment_end) <= radius_squared)
       {

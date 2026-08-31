@@ -52,6 +52,16 @@ Or run the same configured example through launch:
 roslaunch ompl_examples plan_2d.launch
 ```
 
+The YAML config also includes a circular robot model:
+
+```yaml
+robot:
+  radius: 0.2
+  safety_margin: 0.1
+```
+
+The planner checks obstacles with an effective collision radius of `obstacle.radius + robot.radius + robot.safety_margin`. The plot shows the physical obstacle and the inflated collision boundary.
+
 ## Plot
 
 Generate a path CSV and save a plot image:
@@ -61,7 +71,7 @@ rosrun ompl_examples plan_2d $(rospack find ompl_examples)/config/plan_2d_world.
 rosrun ompl_examples plot_2d_path.py /tmp/plan_2d_path.csv --config $(rospack find ompl_examples)/config/plan_2d_world.yaml --output /tmp/plan_2d_path.png
 ```
 
-If you edit the YAML world config, regenerate the CSV before plotting. The plotter validates the CSV path against the configured obstacles and reports an error if they do not match.
+If you edit the YAML world config, regenerate the CSV before plotting. The plotter validates the CSV path against the configured collision boundaries and reports an error if they do not match.
 
 Omit `--output` to open an interactive matplotlib window instead.
 

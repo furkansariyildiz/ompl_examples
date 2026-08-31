@@ -20,6 +20,10 @@ DEFAULT_WORLD = {
         "x": 9.0,
         "y": 9.0,
     },
+    "robot": {
+        "radius": 0.0,
+        "safety_margin": 0.0,
+    },
     "obstacles": [
         {"center": {"x": 5.0, "y": 5.0}, "radius": 1.25},
         {"center": {"x": 3.0, "y": 6.5}, "radius": 1.0},
@@ -51,7 +55,30 @@ def read_world_config(file_path):
         if field not in world:
             raise ValueError(f"World config is missing required field: {field}")
 
+    default_robot = DEFAULT_WORLD["robot"]
+    world.setdefault("robot", {})
+    world["robot"].setdefault("radius", default_robot["radius"])
+    world["robot"].setdefault("safety_margin", default_robot["safety_margin"])
+
+    if world["robot"]["radius"] < 0.0:
+        raise ValueError("The robot radius must be non-negative.")
+    if world["robot"]["safety_margin"] < 0.0:
+        raise ValueError("The robot safety margin must be non-negative.")
+
+    for obstacle_config in world["obstacles"]:
+        if obstacle_config["radius"] < 0.0:
+            raise ValueError("Obstacle radii must be non-negative.")
+
     return world
+
+
+def get_collision_padding(world):
+    robot = world["robot"]
+    return robot["radius"] + robot["safety_margin"]
+
+
+def get_collision_radius(obstacle_config, world):
+    return obstacle_config["radius"] + get_collision_padding(world)
 
 
 def squared_distance_to_segment(point, segment_start, segment_end):
@@ -89,7 +116,7 @@ def find_path_intersections(path_points, world):
         for obstacle_index, obstacle_config in enumerate(world["obstacles"]):
             center = obstacle_config["center"]
             obstacle_center = (center["x"], center["y"])
-            radius = obstacle_config["radius"]
+            radius = get_collision_radius(obstacle_config, world)
             distance_squared = squared_distance_to_segment(
                 obstacle_center, segment_start, segment_end
             )
@@ -114,7 +141,7 @@ def validate_path_against_world(path_points, world):
 
     first = intersections[0]
     raise ValueError(
-        "Path CSV intersects the configured obstacles. "
+        "Path CSV intersects the configured collision boundaries. "
         f"First hit: segment {first['segment_index']} intersects obstacle "
         f"{first['obstacle_index']} "
         f"(distance {first['distance']:.6f} <= radius {first['radius']:.6f}). "
@@ -141,17 +168,34 @@ def plot_scene(path_points, world, output_path=None):
     axes.set_aspect("equal", adjustable="box")
     axes.grid(True, linestyle="--", linewidth=0.5, alpha=0.5)
 
-    for obstacle_config in world["obstacles"]:
+    collision_padding = get_collision_padding(world)
+
+    for obstacle_index, obstacle_config in enumerate(world["obstacles"]):
         center = obstacle_config["center"]
+        physical_radius = obstacle_config["radius"]
+        collision_radius = get_collision_radius(obstacle_config, world)
         obstacle = Circle(
             (center["x"], center["y"]),
-            obstacle_config["radius"],
+            physical_radius,
             facecolor="tab:red",
             edgecolor="darkred",
             alpha=0.35,
             linewidth=1.5,
+            label="Obstacle" if obstacle_index == 0 else None,
         )
         axes.add_patch(obstacle)
+
+        if collision_padding > 0.0:
+            collision_boundary = Circle(
+                (center["x"], center["y"]),
+                collision_radius,
+                facecolor="none",
+                edgecolor="tab:orange",
+                linestyle="--",
+                linewidth=1.5,
+                label="Collision boundary" if obstacle_index == 0 else None,
+            )
+            axes.add_patch(collision_boundary)
 
     if path_points:
         path_x = [point[0] for point in path_points]

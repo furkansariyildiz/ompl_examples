@@ -16,7 +16,7 @@ struct CircleObstacle
   double center_y;
   double radius;
 
-  bool contains(double x, double y) const;
+  bool contains(double x, double y, double padding = 0.0) const;
 };
 
 struct Point2D
@@ -25,14 +25,25 @@ struct Point2D
   double y;
 };
 
+struct RobotModel
+{
+  double radius;
+  double safety_margin;
+};
+
 struct PlanningWorld
 {
   double bound_low;
   double bound_high;
   Point2D start;
   Point2D goal;
+  RobotModel robot;
   std::vector<CircleObstacle> obstacles;
 };
+
+double getCollisionPadding(const RobotModel &robot);
+
+double getCollisionRadius(const CircleObstacle &obstacle, const RobotModel &robot);
 
 /**
  * @brief Creates a default planning world with predefined bounds, start and goal points, and obstacles.
@@ -50,20 +61,24 @@ PlanningWorld makeDefaultWorld();
 bool loadWorldConfig(const std::string &file_path, PlanningWorld &world, std::string &error_message);
 
 /**
- * @brief Checks if a given state is valid (i.e., not inside any obstacles).
+ * @brief Checks if a given state is valid (i.e., not inside any inflated obstacles).
  * @param state A pointer to the state to be checked.
  * @param obstacles A vector of CircleObstacle objects representing the obstacles in the environment.
+ * @param robot The circular robot model used to inflate obstacle collision radii.
  * @return True if the state is valid, false otherwise.
  */
-bool isStateValid(const ompl::base::State *state, const std::vector<CircleObstacle> &obstacles);
+bool isStateValid(const ompl::base::State *state, const std::vector<CircleObstacle> &obstacles,
+                  const RobotModel &robot);
 
 /**
- * @brief Checks if a given path is valid (i.e., does not intersect any obstacles).
+ * @brief Checks if a given path is valid (i.e., does not intersect any inflated obstacles).
  * @param path A reference to the PathGeometric object representing the path to be checked.
  * @param obstacles A vector of CircleObstacle objects representing the obstacles in the environment.
+ * @param robot The circular robot model used to inflate obstacle collision radii.
  * @return True if the path is valid, false otherwise.
  */
-bool isPathValid(const ompl::geometric::PathGeometric &path, const std::vector<CircleObstacle> &obstacles);
+bool isPathValid(const ompl::geometric::PathGeometric &path, const std::vector<CircleObstacle> &obstacles,
+                 const RobotModel &robot);
 
 /**
  * @brief Prints the states of a given path to the standard output.
